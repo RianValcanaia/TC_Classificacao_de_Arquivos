@@ -7,6 +7,8 @@
 #include<fstream>
 #include<algorithm>
 #include<limits>
+#include<queue>
+#include<filesystem>
 
 using namespace std;
 
@@ -48,6 +50,36 @@ bool temDescongelado(const vector<Registro> &memoria){
 
 void descongela(vector<Registro> &memoria) { for (int i = 0; i < memoria.size(); i++) memoria[i].congelado = false; }
 
+vector<queue<int>> carregaParticoes(vector<pair<filesystem::path, bool>> &arquivosParticoes, int qtEntrada){
+    vector<queue<int>> particoes;
+    int aux;
+    int cont = 0;
+
+    for(auto &objeto: arquivosParticoes){
+        if (cont >= qtEntrada) break;
+
+        if (!objeto.second){
+            ifstream arquivo(objeto.first);
+            if(!arquivo){
+                cout << "Erro ao abrir a partição. Aperte enter para voltar." << endl;
+                cin.ignore();
+                cin.get();
+                return {};
+            }
+
+
+            queue<int> fila;
+            int valor;
+            while (arquivo >> valor) fila.push(valor);
+
+            particoes.push_back(fila);
+            objeto.second = true;
+            cont++;
+        }
+    }
+    return particoes;
+}
+
 // Funcoes Primarias
 void classificacao(){
     limpa_tela();
@@ -60,7 +92,7 @@ void classificacao(){
     int tamMemoriaPrincipal;
     cin >> tamMemoriaPrincipal;
 
-    if (tamMemoriaPrincipal < 1) {
+    while (tamMemoriaPrincipal < 1) {
         cout << "Quantidade inválida. Digite novamente: ";
         cin >> tamMemoriaPrincipal;
     }
@@ -81,11 +113,21 @@ void classificacao(){
 
     int contParticao = 1;
 
-    #ifdef _WIN32
-        system("mkdir particoes");
-    #else
-        system("mkdir -p particoes");
-    #endif
+    //apaga particao caso existir
+    if (filesystem::exists("particoes")) {
+        for (const auto &entry : filesystem::directory_iterator("particoes")) {
+            if (filesystem::is_regular_file(entry)) {
+                filesystem::remove(entry);
+            }
+        }
+    }else {
+        #ifdef _WIN32
+            system("mkdir particoes");
+        #else
+            system("mkdir -p particoes");
+        #endif
+    }
+
 
     while(!memPrincipal.empty()){  
         bool contemRegistros = false;
@@ -135,8 +177,85 @@ void classificacao(){
     cin.get();
 }
 
-void intercalacao(){
+void intercalacaoOtima(){
+    limpa_tela();
+    
+    cout << "Digite a quantidade de arquivos I/O:" << endl;
+    int qtArq;
+    cin >> qtArq;
 
+    while (qtArq < 3){
+        cout << "Quantidade deve ser maior que 2. Digite novamente: ";
+        cin >> qtArq;
+    }
+
+    if (!filesystem::exists("particoes")){
+        cout << "Pasta de partições não encontrada. Aperte enter para voltar. " << endl;
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
+    int qtEntrada = qtArq-1;
+    int qtSaida = 1;
+
+    vector<pair<filesystem::path, bool>> arquivosParticoes;
+
+
+    for (const auto &objeto: filesystem::directory_iterator("particoes")){
+        if(objeto.is_regular_file()){
+            arquivosParticoes.push_back({objeto.path(), false});
+        }
+    }
+
+    //apaga saida se existir
+    if (filesystem::exists("saida")) {
+        for (const auto &entry : filesystem::directory_iterator("saida")) {
+            if (filesystem::is_regular_file(entry)) filesystem::remove(entry);
+        }
+    } else {
+        #ifdef _WIN32
+            system("mkdir saida");
+        #else
+            system("mkdir -p saida");
+        #endif
+    }
+
+    int contSaida = 1;
+    while (count_if(arquivosParticoes.begin(), arquivosParticoes.end(), [](const pair<filesystem::path, bool> &p){return !p.second;}) > 1){
+        vector<queue<int>> particoes = carregaParticoes(arquivosParticoes, qtEntrada);
+        cout << "tamanho particoes:" << particoes.size() << endl;
+        if (particoes.empty()) return;
+        
+        string nomeSaida = "saida/S" + to_string(contSaida) + ".txt";
+        ofstream saida(nomeSaida);
+
+        //enquando houver uma fila não vazia
+        while(any_of(particoes.begin(),particoes.end(), [](const queue<int> &arq){return !arq.empty();})){
+            int menor = -1;
+
+            for (int i = 0; i < particoes.size(); i++){
+                if (!particoes[i].empty()){
+                    if (menor == -1 || particoes[i].front() < particoes[menor].front()) menor = i;
+                }
+            }
+
+            if (menor != -1){
+                saida << particoes[menor].front() << " ";
+                particoes[menor].pop();
+            }
+        }
+
+        arquivosParticoes.push_back({filesystem::path(nomeSaida),false});
+        contSaida++;
+
+    }
+
+    filesystem::copy_file("saida/S" + to_string(contSaida-1) + ".txt", "saida_final.txt", filesystem::copy_options::overwrite_existing);
+
+    cout << "Arquivo intercalado com sucesso. Aperte enter para voltar. ";
+    cin.ignore();
+    cin.get();
 }
 
 void gerar(){
@@ -192,7 +311,7 @@ int main(){
     while (continuar){
         limpa_tela();
         cout << "1 - Classificacao com substituição" << endl
-             << "2 - Intercalação balanceada de N caminhos" <<  endl
+             << "2 - Intercalação Ótima" <<  endl
              << "3 - Gerar registros aleatórios" << endl
              << "4 - Sair" << endl;
         entrada(1,4,&opcao);
@@ -202,7 +321,7 @@ int main(){
             classificacao(); //ok
             break;
             case 2:
-            intercalacao();
+            intercalacaoOtima(); //ok
             break;
             case 3:
             gerar(); //ok
@@ -211,7 +330,8 @@ int main(){
             continuar = false;
             break;
         }
-
     }
+
+    limpa_tela();
 
 }
