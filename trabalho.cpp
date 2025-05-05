@@ -17,7 +17,7 @@ struct Registro{
     bool congelado;
 };
 
-// Funcoes Secundárias
+// Funcoes Secundarias
 void limpa_tela(){  // seq Ansi para limpar tela
     cout << "\033[2J\033[H";
 }
@@ -27,7 +27,7 @@ void limpa_buffer() {  // limpa buffer de entrada
     cin.ignore(numeric_limits<streamsize>::max(), '\n');
 }
 
-void entrada(int ini, int fim, int *opcao){ // verifica se a entrada esta dentro do intervalo
+void entrada(int ini, int fim, int *opcao){  // verifica se a entrada esta dentro do intervalo
     int a;
     cout << "Digite uma opção: ";
     cin >> a;
@@ -39,18 +39,16 @@ void entrada(int ini, int fim, int *opcao){ // verifica se a entrada esta dentro
     *opcao = a;
 }
 
-string criaParticao(int indice) { return "particoes/P" + to_string(indice) + ".txt";}
+string criaParticao(int indice) { return "particoes/P" + to_string(indice) + ".txt";}  // retorna uma string path para particao
 
-bool comparaRegistros(const Registro &a, const Registro &b) { return a.registro < b.registro; }
+void descongela(vector<Registro> &memoria) { for (int i = 0; i < memoria.size(); i++) memoria[i].congelado = false; }  // descongela registros do vetor
 
-bool temDescongelado(const vector<Registro> &memoria){
+bool temDescongelado(const vector<Registro> &memoria){  // verifica se tem descongelados na memoria
     for(int i = 0; i < memoria.size(); i++) if (memoria[i].congelado == false) return true;
     return false;
 }
 
-void descongela(vector<Registro> &memoria) { for (int i = 0; i < memoria.size(); i++) memoria[i].congelado = false; }
-
-vector<queue<int>> carregaParticoes(vector<pair<filesystem::path, bool>> &arquivosParticoes, int qtEntrada){
+vector<queue<int>> carregaParticoes(vector<pair<filesystem::path, bool>> &arquivosParticoes, int qtEntrada){  // carrega particoeses na fila e devolve um vetor de filas
     vector<queue<int>> particoes;
     int aux;
     int cont = 0;
@@ -81,7 +79,7 @@ vector<queue<int>> carregaParticoes(vector<pair<filesystem::path, bool>> &arquiv
 }
 
 // Funcoes Primarias
-void classificacao(){
+void classificacao(){  // Classifica o arquivo com metodo de selecao com substituicao
     limpa_tela();
 
     cout << "Digite o nome do arquivo a ser classificado: ";
@@ -113,14 +111,14 @@ void classificacao(){
 
     int contParticao = 1;
 
-    //apaga particao caso existir
+    //apaga pasta particao caso existir
     if (filesystem::exists("particoes")) {
         for (const auto &entry : filesystem::directory_iterator("particoes")) {
             if (filesystem::is_regular_file(entry)) {
                 filesystem::remove(entry);
             }
         }
-    }else {
+    }else {  // cria pasta particao
         #ifdef _WIN32
             system("mkdir particoes");
         #else
@@ -132,6 +130,7 @@ void classificacao(){
     while(!memPrincipal.empty()){  
         bool contemRegistros = false;
         int ultimoAdicionado = numeric_limits<int>::min();
+
         ofstream particao(criaParticao(contParticao));
         if(!particao){
             cout << "Erro ao criar partição" << endl;
@@ -140,7 +139,7 @@ void classificacao(){
 
         while(temDescongelado(memPrincipal)){  
             int menor = -1;
-            for (int i = 0; i < memPrincipal.size(); i++){
+            for (int i = 0; i < memPrincipal.size(); i++){  // encontra o menor da memoria principal
                 if (!memPrincipal[i].congelado){
                     if (menor == -1 || memPrincipal[i].registro < memPrincipal[menor].registro){
                         menor = i;
@@ -151,7 +150,7 @@ void classificacao(){
             if (menor == -1) break;
 
 
-            if (memPrincipal[menor].registro >= ultimoAdicionado){
+            if (memPrincipal[menor].registro >= ultimoAdicionado){  // se for maior ou igual ao recem adicionado a particao ele grava
                 particao << memPrincipal[menor].registro << " ";
                 ultimoAdicionado = memPrincipal[menor].registro;
                 contemRegistros = true;
@@ -168,6 +167,7 @@ void classificacao(){
 
         particao.close();
         descongela(memPrincipal);
+
         if (contemRegistros) contParticao++;
         ultimoAdicionado = numeric_limits<int>::min();
     }
@@ -177,7 +177,7 @@ void classificacao(){
     cin.get();
 }
 
-void intercalacaoOtima(){
+void intercalacaoOtima(){  // faz a intercalacao das particoes utilizando intercalacao otima
     limpa_tela();
     
     cout << "Digite a quantidade de arquivos I/O:" << endl;
@@ -196,14 +196,14 @@ void intercalacaoOtima(){
         return;
     }
 
-    int qtEntrada = qtArq-1;
-    int qtSaida = 1;
+    int qtEntrada = qtArq-1;  // quantidade de arquivos de entrada
+    int qtSaida = 1;  // quantidade de arquivos de saida
 
-    vector<pair<filesystem::path, bool>> arquivosParticoes;
+    vector<pair<filesystem::path, bool>> arquivosParticoes;  // criar um vetor de pares de path e booleano que indica se o arquivo foi processado
 
 
     for (const auto &objeto: filesystem::directory_iterator("particoes")){
-        if(objeto.is_regular_file()){
+        if(objeto.is_regular_file()){  // se eh um arquivo, e não um diretório, ele adiciona o caminho ao vetor
             arquivosParticoes.push_back({objeto.path(), false});
         }
     }
@@ -213,7 +213,7 @@ void intercalacaoOtima(){
         for (const auto &entry : filesystem::directory_iterator("saida")) {
             if (filesystem::is_regular_file(entry)) filesystem::remove(entry);
         }
-    } else {
+    } else {  // cria uma nova pasta de saida
         #ifdef _WIN32
             system("mkdir saida");
         #else
@@ -222,9 +222,11 @@ void intercalacaoOtima(){
     }
 
     int contSaida = 1;
+
+    // enquanto tiver mais de um arquivo nao intercalado no vetor de path
     while (count_if(arquivosParticoes.begin(), arquivosParticoes.end(), [](const pair<filesystem::path, bool> &p){return !p.second;}) > 1){
-        vector<queue<int>> particoes = carregaParticoes(arquivosParticoes, qtEntrada);
-        cout << "tamanho particoes:" << particoes.size() << endl;
+        vector<queue<int>> particoes = carregaParticoes(arquivosParticoes, qtEntrada);  // carrega as particoes 
+
         if (particoes.empty()) return;
         
         string nomeSaida = "saida/S" + to_string(contSaida) + ".txt";
@@ -248,17 +250,17 @@ void intercalacaoOtima(){
 
         arquivosParticoes.push_back({filesystem::path(nomeSaida),false});
         contSaida++;
-
     }
 
-    filesystem::copy_file("saida/S" + to_string(contSaida-1) + ".txt", "saida_final.txt", filesystem::copy_options::overwrite_existing);
+    // faz uma copia do ultimo arquio de saida, sendo esse o arquivo_classificado
+    filesystem::copy_file("saida/S" + to_string(contSaida-1) + ".txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
 
     cout << "Arquivo intercalado com sucesso. Aperte enter para voltar. ";
     cin.ignore();
     cin.get();
 }
 
-void gerar(){
+void gerar(){  // gera arquivo aleatório em um range determinado pelo usuário
     limpa_tela();
     cout << "Digite o nome do arquivo de salvamento: ";
     string nomeArquivo;
@@ -281,7 +283,7 @@ void gerar(){
         cin >> fim;
     }
 
-    srand(time(nullptr));
+    srand(time(nullptr));  // inicia o gerador de numeros aleatorios utilizando uma seed baseada no tempo atual do sistema
 
     vector<int> vet(qtRegistros);
 
@@ -301,6 +303,7 @@ void gerar(){
 
     arquivo.close();
     cout << "Arquivo criado com sucesso. Aperte enter para voltar.";
+    cin.ignore();
     cin.get();
 }
 
