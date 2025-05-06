@@ -86,6 +86,14 @@ void classificacao(){  // Classifica o arquivo com metodo de selecao com substit
     string nomeArquivo;
     cin >> nomeArquivo;
     
+    ifstream arquivo(nomeArquivo);
+    if(!arquivo){
+        cout << "Erro ao abrir o arquivo para leitura. Aperte enter para voltar.";
+        cin.ignore();
+        cin.get();
+        return;
+    }
+
     cout << "Digite a quantidade de registros a ser carregada para a memória: ";
     int tamMemoriaPrincipal;
     cin >> tamMemoriaPrincipal;
@@ -95,12 +103,6 @@ void classificacao(){  // Classifica o arquivo com metodo de selecao com substit
         cin >> tamMemoriaPrincipal;
     }
     
-    ifstream arquivo(nomeArquivo);
-    if(!arquivo){
-        cout << "Erro ao abrir o arquivo para leitura." << endl;
-        return;
-    }
-
     vector<Registro> memPrincipal;
     Registro regAux;
 
@@ -209,15 +211,15 @@ void intercalacaoOtima(){  // faz a intercalacao das particoes utilizando interc
     }
 
     //apaga saida se existir
-    if (filesystem::exists("saida")) {
-        for (const auto &entry : filesystem::directory_iterator("saida")) {
+    if (filesystem::exists("saidas")) {
+        for (const auto &entry : filesystem::directory_iterator("saidas")) {
             if (filesystem::is_regular_file(entry)) filesystem::remove(entry);
         }
     } else {  // cria uma nova pasta de saida
         #ifdef _WIN32
-            system("mkdir saida");
+            system("mkdir saidas");
         #else
-            system("mkdir -p saida");
+            system("mkdir -p saidas");
         #endif
     }
 
@@ -229,10 +231,10 @@ void intercalacaoOtima(){  // faz a intercalacao das particoes utilizando interc
 
         if (particoes.empty()) return;
         
-        string nomeSaida = "saida/S" + to_string(contSaida) + ".txt";
+        string nomeSaida = "saidas/S" + to_string(contSaida) + ".txt";
         ofstream saida(nomeSaida);
 
-        //enquando houver uma fila não vazia
+        //enquando houver uma fila nao vazia
         while(any_of(particoes.begin(),particoes.end(), [](const queue<int> &arq){return !arq.empty();})){
             int menor = -1;
 
@@ -253,7 +255,7 @@ void intercalacaoOtima(){  // faz a intercalacao das particoes utilizando interc
     }
 
     // faz uma copia do ultimo arquio de saida, sendo esse o arquivo_classificado
-    filesystem::copy_file("saida/S" + to_string(contSaida-1) + ".txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
+    filesystem::copy_file("saidas/S" + to_string(contSaida-1) + ".txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
 
     cout << "Arquivo intercalado com sucesso. Aperte enter para voltar. ";
     cin.ignore();
