@@ -254,8 +254,12 @@ void intercalacaoOtima(){  // faz a intercalacao das particoes utilizando interc
         contSaida++;
     }
 
-    // faz uma copia do ultimo arquio de saida, sendo esse o arquivo_classificado
-    filesystem::copy_file("saidas/S" + to_string(contSaida-1) + ".txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
+    if (contSaida > 1) {
+        filesystem::copy_file("saidas/S" + to_string(contSaida-1) + ".txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
+    } else {
+        // faz uma copia do ultimo arquio de saida, sendo esse o arquivo_classificado
+        filesystem::copy_file("particoes/P1.txt", "arquivo_classificado.txt", filesystem::copy_options::overwrite_existing);
+    }
 
     cout << "Arquivo intercalado com sucesso. Aperte enter para voltar. ";
     cin.ignore();
