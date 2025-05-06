@@ -1,4 +1,4 @@
-# 🗃️ Trabalho 01 – Estrutura de Dados e Arquivos (Classificação e Intercalação)
+# 🗃️ Trabalho 02 – Estrutura de Dados (Classificação e Intercalação)
 
 Este repositório contém a implementação de um sistema de **classificação com substituição** e **intercalação ótima** de registros, desenvolvido como parte do Trabalho 2 da disciplina de **Estrutura de Dados(EDA)**.
 
@@ -65,6 +65,8 @@ Essas funções **auxiliam ou suportam** as operações principais:
 3. As partições são geradas na pasta `particoes/`.
 4. Executa a **intercalação ótima** com os arquivos gerados, o arquivo de saída é gravado em uma pasta de saída.
 5. O resultado final do arquivo de entrada classificado aparece em `arquivo_classificado.txt`.
+
+❗ obs: a pasta do trabalho contém um `arquivo_teste.txt` com 400 registros gerados aleatóriamente, e utilizando 20 espaços na memória principal gera 11 partições.
 
 ## 📂 Como executar
 
